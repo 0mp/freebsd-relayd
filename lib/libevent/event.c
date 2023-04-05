@@ -26,42 +26,90 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
+#endif
 #include <sys/types.h>
-#include <sys/socket.h>
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#else 
+#include <sys/_libevent_time.h>
+#endif
 #include <sys/queue.h>
-
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
 #include <assert.h>
 #include <time.h>
-#include <netdb.h>
-#include <asr.h>
 
 #include "event.h"
 #include "event-internal.h"
+#include "evutil.h"
 #include "log.h"
 
+#ifdef HAVE_EVENT_PORTS
+extern const struct eventop evportops;
+#endif
+#ifdef HAVE_SELECT
 extern const struct eventop selectops;
+#endif
+#ifdef HAVE_POLL
 extern const struct eventop pollops;
+#endif
+#ifdef HAVE_EPOLL
+extern const struct eventop epollops;
+#endif
+#ifdef HAVE_WORKING_KQUEUE
 extern const struct eventop kqops;
+#endif
+#ifdef HAVE_DEVPOLL
+extern const struct eventop devpollops;
+#endif
+#ifdef WIN32
+extern const struct eventop win32ops;
+#endif
 
 /* In order of preference */
 static const struct eventop *eventops[] = {
+#ifdef HAVE_EVENT_PORTS
+	&evportops,
+#endif
+#ifdef HAVE_WORKING_KQUEUE
 	&kqops,
+#endif
+#ifdef HAVE_EPOLL
+	&epollops,
+#endif
+#ifdef HAVE_DEVPOLL
+	&devpollops,
+#endif
+#ifdef HAVE_POLL
 	&pollops,
+#endif
+#ifdef HAVE_SELECT
 	&selectops,
+#endif
+#ifdef WIN32
+	&win32ops,
+#endif
 	NULL
 };
 
 /* Global state */
 struct event_base *current_base = NULL;
 extern struct event_base *evsignal_base;
+static int use_monotonic;
 
 /* Handle signals - This is a deprecated interface */
 int (*event_sigcb)(void);		/* Signal callback when gotsig is set */
@@ -76,21 +124,41 @@ static void	event_process_active(struct event_base *);
 
 static int	timeout_next(struct event_base *, struct timeval **);
 static void	timeout_process(struct event_base *);
+static void	timeout_correct(struct event_base *, struct timeval *);
 
 static void
-gettime(struct event_base *base, struct timeval *tp)
+detect_monotonic(void)
 {
+#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
 	struct timespec	ts;
 
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
+		use_monotonic = 1;
+#endif
+}
+
+static int
+gettime(struct event_base *base, struct timeval *tp)
+{
 	if (base->tv_cache.tv_sec) {
 		*tp = base->tv_cache;
-		return;
+		return (0);
 	}
 
-	if (clock_gettime(CLOCK_MONOTONIC, &ts) == -1)
-		event_err(1, "%s: clock_gettime", __func__);
+#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
+	if (use_monotonic) {
+		struct timespec	ts;
 
-	TIMESPEC_TO_TIMEVAL(tp, &ts);
+		if (clock_gettime(CLOCK_MONOTONIC, &ts) == -1)
+			return (-1);
+
+		tp->tv_sec = ts.tv_sec;
+		tp->tv_usec = ts.tv_nsec / 1000;
+		return (0);
+	}
+#endif
+
+	return (evutil_gettimeofday(tp, NULL));
 }
 
 struct event_base *
@@ -116,13 +184,14 @@ event_base_new(void)
 	event_sigcb = NULL;
 	event_gotsig = 0;
 
+	detect_monotonic();
 	gettime(base, &base->event_tv);
-
+	
 	min_heap_ctor(&base->timeheap);
 	TAILQ_INIT(&base->eventqueue);
 	base->sig.ev_signal_pair[0] = -1;
 	base->sig.ev_signal_pair[1] = -1;
-
+	
 	base->evbase = NULL;
 	for (i = 0; eventops[i] && !base->evbase; i++) {
 		base->evsel = eventops[i];
@@ -133,8 +202,9 @@ event_base_new(void)
 	if (base->evbase == NULL)
 		event_errx(1, "%s: no event mechanism available", __func__);
 
-	if (!issetugid() && getenv("EVENT_SHOW_METHOD"))
-		event_msgx("libevent using: %s", base->evsel->name);
+	if (evutil_getenv("EVENT_SHOW_METHOD")) 
+		event_msgx("libevent using: %s\n",
+			   base->evsel->name);
 
 	/* allocate a single active event queue */
 	event_base_priority_init(base, 1);
@@ -145,8 +215,7 @@ event_base_new(void)
 void
 event_base_free(struct event_base *base)
 {
-	int i;
-	size_t n_deleted=0;
+	int i, n_deleted=0;
 	struct event *ev;
 
 	if (base == NULL && current_base)
@@ -182,7 +251,7 @@ event_base_free(struct event_base *base)
 	}
 
 	if (n_deleted)
-		event_debug(("%s: %zu events were still set in base",
+		event_debug(("%s: %d events were still set in base",
 			__func__, n_deleted));
 
 	if (base->evsel->dealloc != NULL)
@@ -215,7 +284,7 @@ event_reinit(struct event_base *base)
 #if 0
 	/* Right now, reinit always takes effect, since even if the
 	   backend doesn't require it, the signal socketpair code does.
-	*/
+	 */
 	/* check if this event mechanism requires reinit */
 	if (!evsel->need_reinit)
 		return (0);
@@ -323,7 +392,7 @@ event_process_active(struct event_base *base)
 			event_queue_remove(base, ev, EVLIST_ACTIVE);
 		else
 			event_del(ev);
-
+		
 		/* Allows deletes to work */
 		ncalls = ev->ev_ncalls;
 		ev->ev_pncalls = &ncalls;
@@ -448,17 +517,19 @@ event_base_loop(struct event_base *base, int flags)
 			}
 		}
 
+		timeout_correct(base, &tv);
+
 		tv_p = &tv;
 		if (!base->event_count_active && !(flags & EVLOOP_NONBLOCK)) {
 			timeout_next(base, &tv_p);
 		} else {
-			/*
+			/* 
 			 * if we have active events, we just poll new events
 			 * without waiting.
 			 */
-			timerclear(&tv);
+			evutil_timerclear(&tv);
 		}
-
+		
 		/* If we have no events, we just exit */
 		if (!event_haveevents(base)) {
 			event_debug(("%s: no events registered.", __func__));
@@ -543,7 +614,7 @@ event_base_once(struct event_base *base, int fd, short events,
 
 	if (events == EV_TIMEOUT) {
 		if (tv == NULL) {
-			timerclear(&etv);
+			evutil_timerclear(&etv);
 			tv = &etv;
 		}
 
@@ -645,10 +716,10 @@ event_pending(struct event *ev, short event, struct timeval *tv)
 	/* See if there is a timeout that we should report */
 	if (tv != NULL && (flags & event & EV_TIMEOUT)) {
 		gettime(ev->ev_base, &now);
-		timersub(&ev->ev_timeout, &now, &res);
+		evutil_timersub(&ev->ev_timeout, &now, &res);
 		/* correctly remap to real time */
-		gettimeofday(&now, NULL);
-		timeradd(&now, &res, tv);
+		evutil_gettimeofday(&now, NULL);
+		evutil_timeradd(&now, &res, tv);
 	}
 
 	return (flags & event);
@@ -696,7 +767,7 @@ event_add(struct event *ev, const struct timeval *tv)
 	if (res != -1 && tv != NULL) {
 		struct timeval now;
 
-		/*
+		/* 
 		 * we already reserved memory above for the case where we
 		 * are not replacing an existing timeout.
 		 */
@@ -715,16 +786,16 @@ event_add(struct event *ev, const struct timeval *tv)
 				/* Abort loop */
 				*ev->ev_pncalls = 0;
 			}
-
+			
 			event_queue_remove(base, ev, EVLIST_ACTIVE);
 		}
 
 		gettime(base, &now);
-		timeradd(&now, tv, &ev->ev_timeout);
+		evutil_timeradd(&now, tv, &ev->ev_timeout);
 
 		event_debug((
-			 "event_add: timeout in %lld seconds, call %p",
-			 (long long)tv->tv_sec, ev->ev_callback));
+			 "event_add: timeout in %ld seconds, call %p",
+			 tv->tv_sec, ev->ev_callback));
 
 		event_queue_insert(base, ev, EVLIST_TIMEOUT);
 	}
@@ -800,20 +871,62 @@ timeout_next(struct event_base *base, struct timeval **tv_p)
 		return (0);
 	}
 
-	gettime(base, &now);
+	if (gettime(base, &now) == -1)
+		return (-1);
 
-	if (timercmp(&ev->ev_timeout, &now, <=)) {
-		timerclear(tv);
+	if (evutil_timercmp(&ev->ev_timeout, &now, <=)) {
+		evutil_timerclear(tv);
 		return (0);
 	}
 
-	timersub(&ev->ev_timeout, &now, tv);
+	evutil_timersub(&ev->ev_timeout, &now, tv);
 
 	assert(tv->tv_sec >= 0);
 	assert(tv->tv_usec >= 0);
 
-	event_debug(("timeout_next: in %lld seconds", (long long)tv->tv_sec));
+	event_debug(("timeout_next: in %ld seconds", tv->tv_sec));
 	return (0);
+}
+
+/*
+ * Determines if the time is running backwards by comparing the current
+ * time against the last time we checked.  Not needed when using clock
+ * monotonic.
+ */
+
+static void
+timeout_correct(struct event_base *base, struct timeval *tv)
+{
+	struct event **pev;
+	unsigned int size;
+	struct timeval off;
+
+	if (use_monotonic)
+		return;
+
+	/* Check if time is running backwards */
+	gettime(base, tv);
+	if (evutil_timercmp(tv, &base->event_tv, >=)) {
+		base->event_tv = *tv;
+		return;
+	}
+
+	event_debug(("%s: time is running backwards, corrected",
+		    __func__));
+	evutil_timersub(&base->event_tv, tv, &off);
+
+	/*
+	 * We can modify the key element of the node without destroying
+	 * the key, beause we apply it to all in the right order.
+	 */
+	pev = base->timeheap.p;
+	size = base->timeheap.n;
+	for (; size-- > 0; ++pev) {
+		struct timeval *ev_tv = &(**pev).ev_timeout;
+		evutil_timersub(ev_tv, &off, ev_tv);
+	}
+	/* Now remember what the new time turned out to be. */
+	base->event_tv = *tv;
 }
 
 void
@@ -828,7 +941,7 @@ timeout_process(struct event_base *base)
 	gettime(base, &now);
 
 	while ((ev = min_heap_top(&base->timeheap))) {
-		if (timercmp(&ev->ev_timeout, &now, >))
+		if (evutil_timercmp(&ev->ev_timeout, &now, >))
 			break;
 
 		/* delete this event from the I/O queues */
@@ -907,10 +1020,10 @@ event_queue_insert(struct event_base *base, struct event *ev, int queue)
 const char *
 event_get_version(void)
 {
-	return (_EVENT_VERSION);
+	return (VERSION);
 }
 
-/*
+/* 
  * No thread-safe interface needed - the information should be the same
  * for all threads.
  */
@@ -919,66 +1032,4 @@ const char *
 event_get_method(void)
 {
 	return (current_base->evsel->name);
-}
-
-
-/*
- * Libevent glue for ASR.
- */
-struct event_asr {
-	struct event	 ev;
-	struct asr_query *async;
-	void		(*cb)(struct asr_result *, void *);
-	void		*arg;
-};
-
-static void
-event_asr_dispatch(int fd __attribute__((__unused__)),
-    short ev __attribute__((__unused__)), void *arg)
-{
-	struct event_asr	*eva = arg;
-	struct asr_result	 ar;
-	struct timeval		 tv;
-
-	event_del(&eva->ev);
-
-	if (asr_run(eva->async, &ar)) {
-		eva->cb(&ar, eva->arg);
-		free(eva);
-	} else {
-		event_set(&eva->ev, ar.ar_fd,
-		    ar.ar_cond == ASR_WANT_READ ? EV_READ : EV_WRITE,
-		    event_asr_dispatch, eva);
-		tv.tv_sec = ar.ar_timeout / 1000;
-		tv.tv_usec = (ar.ar_timeout % 1000) * 1000;
-		event_add(&eva->ev, &tv);
-	}
-}
-
-struct event_asr *
-event_asr_run(struct asr_query *async, void (*cb)(struct asr_result *, void *),
-    void *arg)
-{
-	struct event_asr *eva;
-	struct timeval tv;
-
-	eva = calloc(1, sizeof *eva);
-	if (eva == NULL)
-		return (NULL);
-	eva->async = async;
-	eva->cb = cb;
-	eva->arg = arg;
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-	evtimer_set(&eva->ev, event_asr_dispatch, eva);
-	evtimer_add(&eva->ev, &tv);
-	return (eva);
-}
-
-void
-event_asr_abort(struct event_asr *eva)
-{
-	asr_abort(eva->async);
-	event_del(&eva->ev);
-	free(eva);
 }
