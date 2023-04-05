@@ -1,3 +1,6 @@
 **/obj
 **/tags
 **/CVS
+# BEGIN FreeBSD-relayd
+share/mk/freebsd.mk
+# END FreeBSD-relayd
