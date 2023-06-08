@@ -63,7 +63,7 @@
 #endif
 
 #ifdef __FreeBSD__
-#define	CONF_FILE		"/usr/local/etc/relayd.conf"
+#define	CONF_FILE		FREEBSD_RELAYD_PREFIX "/etc/relayd.conf"
 #else
 #define CONF_FILE		"/etc/relayd.conf"
 #endif
