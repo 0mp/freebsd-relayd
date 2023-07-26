@@ -1,0 +1,21 @@
+name: Main
+
+on:
+  push:
+    tags:
+      - "wip*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Build
+        run:  ./release-relayd.sh "${GITHUB_REF##*/}"
+      - name: Test 
+        run: tar -t -f "./relayd-${GITHUB_REF##*/}.tar.gz"
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./relayd-${GITHUB_REF##*/}.tar.gz
