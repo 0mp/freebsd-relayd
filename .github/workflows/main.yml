@@ -4,16 +4,18 @@ on: push
 
 jobs:
   build:
+    env:
+      TARBALL: "./relayd-${{ github.ref_name }}.tar.gz"
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: "Check out"
         uses: actions/checkout@v3
-      - name: Build
-        run:  ./release-relayd.sh "${GITHUB_REF##*/}"
-      - name: Test 
-        run: tar -t -f "./relayd-${GITHUB_REF##*/}.tar.gz"
+      - name: Package
+        run:  ./release-relayd.sh "${{ github.ref_name }}"
+      - name: Test
+        run: tar -t -f "${{ env.TARBALL }}"
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: ./relayd-${GITHUB_REF##*/}.tar.gz
+          files: ${{ env.TARBALL }}
