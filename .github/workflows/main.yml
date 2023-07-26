@@ -1,9 +1,6 @@
 name: Main
 
-on:
-  push:
-    tags:
-      - "wip*"
+on: push
 
 jobs:
   build:
@@ -17,5 +14,6 @@ jobs:
         run: tar -t -f "./relayd-${GITHUB_REF##*/}.tar.gz"
       - name: Release
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: ./relayd-${GITHUB_REF##*/}.tar.gz
