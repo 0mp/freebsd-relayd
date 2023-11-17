@@ -235,9 +235,12 @@ hce_notify_done(struct host *host, enum host_error he)
 		host->retry_cnt = host->conf.retry;
 	if (host->up != HOST_UNKNOWN) {
 		host->check_cnt++;
+		log_debug("%s: known host %s check_cnt %d", __func__, host->conf.name, host->check_cnt);
 		if (host->up == HOST_UP)
 			host->up_cnt++;
-	}
+	} else
+		log_debug("%s: unknown host %s check_cnt %d", __func__, host->conf.name, host->check_cnt);
+
 	st.id = host->conf.id;
 	st.up = host->up;
 	st.check_cnt = host->check_cnt;
@@ -291,6 +294,8 @@ hce_dispatch_pfe(int fd, struct privsep_proc *p, struct imsg *imsg)
 	struct host		*host;
 	struct table		*table;
 
+	log_debug("%s: header type: %d", __func__, imsg->hdr.type);
+
 	switch (imsg->hdr.type) {
 	case IMSG_HOST_DISABLE:
 		memcpy(&id, imsg->data, sizeof(id));
@@ -343,6 +348,8 @@ int
 hce_dispatch_parent(int fd, struct privsep_proc *p, struct imsg *imsg)
 {
 	struct ctl_script	 scr;
+
+	log_debug("%s: header type: %d", __func__, imsg->hdr.type);
 
 	switch (imsg->hdr.type) {
 	case IMSG_SCRIPT:

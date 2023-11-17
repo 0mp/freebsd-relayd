@@ -148,6 +148,8 @@ pfe_dispatch_hce(int fd, struct privsep_proc *p, struct imsg *imsg)
 
 	control_imsg_forward(p->p_ps, imsg);
 
+	log_debug("%s: header type: %d", __func__, imsg->hdr.type);
+
 	switch (imsg->hdr.type) {
 	case IMSG_HOST_STATUS:
 		IMSG_SIZE_CHECK(imsg, &st);
@@ -160,9 +162,11 @@ pfe_dispatch_hce(int fd, struct privsep_proc *p, struct imsg *imsg)
 		host->retry_cnt = st.retry_cnt;
 		if (st.up != HOST_UNKNOWN) {
 			host->check_cnt++;
+			log_debug("%s: known host %s check_cnt %d", __func__, host->conf.name, host->check_cnt);
 			if (st.up == HOST_UP)
 				host->up_cnt++;
-		}
+		} else
+			log_debug("%s: unknown host %s check_cnt %d", __func__, host->conf.name, host->check_cnt);
 		if (host->check_cnt != st.check_cnt) {
 			log_debug("%s: host %d => %d", __func__,
 			    host->conf.id, host->up);
@@ -223,6 +227,8 @@ pfe_dispatch_hce(int fd, struct privsep_proc *p, struct imsg *imsg)
 int
 pfe_dispatch_parent(int fd, struct privsep_proc *p, struct imsg *imsg)
 {
+	log_debug("%s: header type: %d", __func__, imsg->hdr.type);
+
 	switch (imsg->hdr.type) {
 	case IMSG_CFG_TABLE:
 		config_gettable(env, imsg);
