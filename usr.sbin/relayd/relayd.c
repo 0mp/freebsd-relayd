@@ -180,6 +180,8 @@ main(int argc, char *argv[])
 			usage();
 		}
 	}
+	// XXX0MP: Enable debug logging.
+	verbose += 2;
 
 	/* log to stderr until daemonized */
 	log_init(debug ? debug : 1, LOG_DAEMON);
