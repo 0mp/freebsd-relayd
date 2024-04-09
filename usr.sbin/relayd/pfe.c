@@ -84,7 +84,6 @@ pfe(struct privsep *ps, struct privsep_proc *p)
 	if (!status.running)
 		fatalx("%s: pf is disabled", __func__);
 #else /* __FreeBSD_version >= 1500000 */
-	pfctl_free_status(pfs);
 	pfs = pfctl_get_status(env->sc_pf->dev);
 	if (pfs == NULL)
 		fatal("%s: pfctl_get_status", __func__);
