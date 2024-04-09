@@ -595,7 +595,7 @@ sync_ruleset(struct relayd *env, struct rdr *rdr, int enable)
 			/* Old pf */
 			rio.rule.rpool.proxy_port[0] =
 			    ntohs(rdr->table->conf.port);
-#ifdef PFRULE_PFLOW
+#ifdef __notyet
 			/* FreeBSD 10 does not have this member */
 			rio.rule.rpool.port_op = PF_OP_EQ;
 #endif
