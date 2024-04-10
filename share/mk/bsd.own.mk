@@ -16,6 +16,9 @@ SKEY?=		yes
 YP?=		yes
 
 CLANG_ARCH=aarch64 amd64 arm i386 mips64 mips64el powerpc powerpc64 riscv64 sparc64
+# BEGIN FreeBSD-relayd
+CLANG_ARCH=aarch64 amd64 arm armv6 armv7 i386 mips64 mips64el powerpc powerpc64 riscv64 sparc64
+# END FreeBSD-relayd
 GCC4_ARCH=alpha hppa sh sparc64
 GCC3_ARCH=m88k
 LLD_ARCH=aarch64 amd64 arm i386 powerpc powerpc64 riscv64
