@@ -1837,11 +1837,7 @@ relay_close(struct rsession *con, const char *msg, int err)
 			log_warn("relay %s, "
 			    "session %d (%d active), %s, %s -> %s:%d, "
 			    "%s%s%s", rlay->rl_conf.name, con->se_id,
-#ifndef __FreeBSD__
 			    relay_sessions, con->se_tag != 0 ?
-#else
-			    (int)relay_sessions, con->se_tag != 0 ?
-#endif
 			    tag_id2name(con->se_tag) : "0", ibuf, obuf,
 			    ntohs(con->se_out.port), msg, ptr == NULL ?
 			    "" : ",", ptr == NULL ? "" : ptr);
