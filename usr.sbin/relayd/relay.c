@@ -1069,7 +1069,7 @@ relay_error(struct bufferevent *bev, short error, void *arg)
 			relay_close(con, "buffer event timeout", 1);
 		}
 #else
-		relay_close(con, "buffer event timeout");
+		relay_close(con, "buffer event timeout", 1);
 #endif
 		return;
 	}
@@ -1095,7 +1095,7 @@ relay_error(struct bufferevent *bev, short error, void *arg)
 		if (relay_splice(cre) == -1)
 			goto fail;
 #else
-		relay_close(con, "buffer event timed out");
+		relay_close(con, "buffer event timed out", 1);
 #endif
 		return;
 	}
@@ -1105,7 +1105,7 @@ relay_error(struct bufferevent *bev, short error, void *arg)
 			goto fail;
 		bufferevent_enable(cre->bev, EV_READ);
 #else
-		relay_close(con, "buffer event error");
+		relay_close(con, "buffer event error", 1);
 #endif
 		return;
 	}
