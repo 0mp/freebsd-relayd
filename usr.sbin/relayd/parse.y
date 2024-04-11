@@ -500,15 +500,15 @@ main		: INTERVAL NUMBER	{
 */
 		;
 
-#ifndef __FreeBSD__
-path		: /* nothing */		{ $$ = NULL; }
-		| PATH STRING		{ $$ = $2; }
-#endif
+// BEGIN FreeBSD-relayd
+// path		: /* nothing */		{ $$ = NULL; }
+//		| PATH STRING		{ $$ = $2; }
+// END FreeBSD-relayd */
 
-#ifndef __FreeBSD__
-context		: /* nothing */		{ $$ = NULL; }
-		| CONTEXT STRING	{ $$ = $2; }
-#endif
+// BEGIN FreeBSD-relayd
+// context		: /* nothing */		{ $$ = NULL; }
+// 		| CONTEXT STRING	{ $$ = $2; }
+// END FreeBSD-relayd */
 
 loglevel	: STATE CHANGES		{ $$ = RELAYD_OPT_LOGUPDATE; }
 		| HOST CHECKS		{ $$ = RELAYD_OPT_LOGHOSTCHECK; }
