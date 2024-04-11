@@ -200,7 +200,9 @@ main(int argc, char *argv[])
 	env->sc_conf.opts = opts;
 	TAILQ_INIT(&env->sc_hosts);
 	TAILQ_INIT(&env->sc_sessions);
+#ifndef __FreeBSD__
 	env->sc_rtable = getrtable();
+#endif
 	/* initialize the TLS session id to a random key for all relay procs */
 	arc4random_buf(env->sc_conf.tls_sid, sizeof(env->sc_conf.tls_sid));
 
