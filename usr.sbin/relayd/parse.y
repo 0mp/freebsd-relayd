@@ -222,11 +222,12 @@ DESTINATION PRIORITY ROUTER RTLABEL RTABLE MATCH
 %token	EDH TICKETS WEBSOCKETS
 %token	<v.string>	STRING
 %token  <v.number>	NUMBER
-#ifndef __FreeBSD__
+/* BEGIN FreeBSD-relayd
 %type	<v.string>	context hostname interface table value path
-#else
+ * END FreeBSD-relayd */
+/* BEGIN FreeBSD-relayd */
 %type	<v.string>	hostname interface table value
-#endif
+/* END FreeBSD-relayd */
 %type	<v.number>	http_type loglevel quick
 %type	<v.number>	dstmode flag forwardmode retry
 %type	<v.number>	opttls opttlsclient
