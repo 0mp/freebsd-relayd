@@ -25,7 +25,9 @@
 #include <net/if.h>
 #include <net/pfvar.h>
 
+#ifndef __FreeBSD__
 #include <event.h>
+#endif
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
