@@ -1181,8 +1181,10 @@ struct relayd {
 	int			 sc_routercount;
 	int			 sc_routecount;
 #endif
+#ifndef __FreeBSD__
 	struct timeval		 sc_interval;
 	struct timeval		 sc_timeout;
+#endif
 	struct table		 sc_empty_table;
 	struct protocol		 sc_proto_default;
 	struct event		 sc_ev;
