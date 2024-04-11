@@ -133,6 +133,11 @@ main(int argc, char *argv[])
 	struct relayd		*env;
 	struct privsep		*ps;
 	const char		*conffile = CONF_FILE;
+#ifdef __FreeBSD__
+#if __FreeBSD_version > 800040
+	u_int32_t               rnd[256];
+#endif
+#endif
 	enum privsep_procid	 proc_id = PROC_PARENT;
 	int			 proc_instance = 0;
 	const char		*errp, *title = NULL;
@@ -216,6 +221,15 @@ main(int argc, char *argv[])
 
 	if (env->sc_conf.opts & RELAYD_OPT_NOACTION)
 		ps->ps_noaction = 1;
+
+#ifdef __FreeBSD__
+#if __FreeBSD_version > 1000002
+	arc4random_buf(rnd, sizeof(rnd));
+	RAND_seed(rnd, sizeof(rnd));
+#else
+	RAND_load_file("/dev/random",2048);
+#endif
+#endif
 
 	ps->ps_instances[PROC_RELAY] = env->sc_conf.prefork_relay;
 	ps->ps_instances[PROC_CA] = env->sc_conf.prefork_relay;
