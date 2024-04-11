@@ -1154,8 +1154,14 @@ struct relayd_config {
 struct pfdata {
 	int			 dev;
 	struct pf_anchor	*anchor;
+#ifndef __FreeBSD__
 	struct pfioc_trans	 pft;
 	struct pfioc_trans_e	 pfte;
+#else
+	/* FreeBSD's pf(4). */
+	struct pfioc_trans	pft[PF_RULESET_MAX];
+	struct pfioc_trans_e	pfte[PF_RULESET_MAX];
+#endif
 	u_int8_t		 pfused;
 };
 
