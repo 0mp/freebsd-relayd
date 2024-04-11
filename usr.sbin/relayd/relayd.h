@@ -47,7 +47,11 @@
 
 #include <stdarg.h>
 #include <limits.h>
+#ifdef __FreeBSD__
+#include "siphash.h"
+#else
 #include <siphash.h>
+#endif
 #include <event.h>
 #include <imsg.h>
 
