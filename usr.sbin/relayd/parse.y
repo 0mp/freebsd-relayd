@@ -422,6 +422,9 @@ sendbuf		: NOTHING		{
 				fatal("out of memory");
 			free($1);
 		}
+		| SOCKET STRING {
+			conf->sc_ps->ps_csock.cs_name = $2;
+		}
 		;
 
 sendbinbuf	: NOTHING		{
@@ -494,9 +497,6 @@ main		: INTERVAL NUMBER	{
 				    sizeof(conf->sc_conf.agentx_path));
 		}
 */
-		| SOCKET STRING {
-			conf->sc_ps->ps_csock.cs_name = $2;
-		}
 		;
 
 #ifndef __FreeBSD__
