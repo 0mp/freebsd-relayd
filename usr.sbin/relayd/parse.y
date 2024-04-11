@@ -35,7 +35,9 @@
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#ifndef __FreeBSD__
 #include <arpa/nameser.h>
+#endif
 #include <net/if.h>
 #include <net/pfvar.h>
 // FreeBSD #include <net/route.h>
