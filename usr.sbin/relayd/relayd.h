@@ -61,8 +61,6 @@
 #ifndef nitems
 #define	nitems(_a)	(sizeof((_a)) / sizeof((_a)[0]))
 #endif
-#include <limits.h>
-#include <imsg.h>
 
 #ifdef __FreeBSD__
 #define	CONF_FILE		"/usr/local/etc/relayd.conf"
