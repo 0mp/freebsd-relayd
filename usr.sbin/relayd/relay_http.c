@@ -717,6 +717,7 @@ relay_read_http(struct bufferevent *bev, void *arg)
 		relay_close(con, "last http read (done)", 0);
 		return;
 	}
+#ifndef __FreeBSD__
 	switch (relay_splice(cre)) {
 	case -1:
 		relay_close(con, strerror(errno), 1);
@@ -725,6 +726,7 @@ relay_read_http(struct bufferevent *bev, void *arg)
 	case 0:
 		break;
 	}
+#endif
 	bufferevent_enable(bev, EV_READ);
 	if (EVBUFFER_LENGTH(src) && bev->readcb != relay_read_http)
 		bev->readcb(bev, arg);
