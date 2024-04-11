@@ -21,6 +21,12 @@
 #ifndef RELAYD_H
 #define RELAYD_H
 
+#ifdef IN_MAIN
+#define EXTERN
+#else
+#define EXTERN extern
+#endif
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/queue.h>
