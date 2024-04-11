@@ -41,6 +41,10 @@
 #include <net/if.h>
 #include <net/pfvar.h>
 
+#ifdef __FreeBSD__
+#include <sys/queue.h>
+#endif
+
 #include <stdarg.h>
 #include <limits.h>
 #include <siphash.h>
