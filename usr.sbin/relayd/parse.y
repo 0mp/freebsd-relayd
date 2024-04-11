@@ -41,6 +41,9 @@
 #include <net/if.h>
 #include <net/pfvar.h>
 // FreeBSD #include <net/route.h>
+#ifdef __FreeBSD__
+#include <net/route.h>
+#endif
 
 #ifndef __FreeBSD__
 #include <agentx.h>
