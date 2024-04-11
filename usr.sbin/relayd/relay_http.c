@@ -708,9 +708,16 @@ relay_read_http(struct bufferevent *bev, void *arg)
 				relay_bindanyreq(con, 0, IPPROTO_TCP);
 				return;
 			}
+#ifndef __FreeBSD__
 			if (relay_connect(con) == -1)
 				relay_abort_http(con, 502, "session failed", 0);
 			return;
+#else
+			if (relay_connect(con) == -1) {
+				relay_abort_http(con, 502, "session failed", 0);
+				return;
+			}
+#endif
 		}
 	}
 	if (con->se_done) {
