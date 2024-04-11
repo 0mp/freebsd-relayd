@@ -34,6 +34,10 @@
 #include <sys/time.h>
 #include <sys/un.h>
 
+#ifdef __FreeBSD__
+#include <sys/param.h>     /* MAXHOSTNAMELEN */
+#endif
+
 #include <net/if.h>
 #include <net/pfvar.h>
 
