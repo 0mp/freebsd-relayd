@@ -807,6 +807,7 @@ relay_connected(int fd, short sig, void *arg)
 #ifndef __FreeBSD__
 	if (relay_splice(&con->se_out) == -1)
 		relay_close(con, strerror(errno), 1);
+#endif
 }
 
 void
@@ -935,12 +936,6 @@ relay_read(struct bufferevent *bev, void *arg)
 	relay_close(con, strerror(errno), 1);
 }
 
-/*
- * Splice sockets from cre to cre->dst if applicable.  Returns:
- * -1 socket splicing has failed
- * 0 socket splicing is currently not possible
- * 1 socket splicing was successful
- */
 #ifndef __FreeBSD__
 int
 relay_splice(struct ctl_relay_event *cre)
@@ -991,9 +986,15 @@ relay_splice(struct ctl_relay_event *cre)
 	DPRINTF("%s: session %d: splice dir %d, maximum %lld, successful",
 	    __func__, con->se_id, cre->dir, cre->toread);
 
-	return (1);
+	return (0);
 }
 
+/*
+ * Splice sockets from cre to cre->dst if applicable.  Returns:
+ * -1 socket splicing has failed
+ * 0 socket splicing is currently not possible
+ * 1 socket splicing was successful
+ */
 int
 relay_splicelen(struct ctl_relay_event *cre)
 {
@@ -1035,7 +1036,7 @@ relay_spliceadjust(struct ctl_relay_event *cre)
 		cre->toread -= cre->splicelen;
 	cre->splicelen = -1;
 
-	return (0);
+	return (1);
 }
 #endif
 
