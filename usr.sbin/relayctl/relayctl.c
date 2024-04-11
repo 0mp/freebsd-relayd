@@ -146,8 +146,10 @@ main(int argc, char *argv[])
 		err(1, "connect: %s", sockname);
 	}
 
+#ifndef __FreeBSD__
 	if (pledge("stdio", NULL) == -1)
 		err(1, "pledge");
+#endif
 
 	if ((ibuf = malloc(sizeof(struct imsgbuf))) == NULL)
 		err(1, NULL);
