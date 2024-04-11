@@ -490,8 +490,10 @@ main		: INTERVAL NUMBER	{
 path		: /* nothing */		{ $$ = NULL; }
 		| PATH STRING		{ $$ = $2; }
 
+#ifndef __FreeBSD__
 context		: /* nothing */		{ $$ = NULL; }
 		| CONTEXT STRING	{ $$ = $2; }
+#endif
 
 loglevel	: STATE CHANGES		{ $$ = RELAYD_OPT_LOGUPDATE; }
 		| HOST CHECKS		{ $$ = RELAYD_OPT_LOGHOSTCHECK; }
