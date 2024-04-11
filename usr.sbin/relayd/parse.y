@@ -112,8 +112,8 @@ objid_t			 last_proto_id = 0;
 /* FreeBSD exclude
 objid_t			 last_rt_id = 0;
 objid_t			 last_nr_id = 0;
-*/
 objid_t			 last_key_id = 0;
+*/
 
 static struct rdr	*rdr = NULL;
 static struct table	*table = NULL;
