@@ -1785,8 +1785,8 @@ relay_connect(struct rsession *con)
 #endif
 	}
 
-	relay_connect_state(con, &con->se_out, STATE_CONNECTED);
 #ifndef __FreeBSD__ /* file descriptor accounting */
+	relay_connect_state(con, &con->se_out, STATE_CONNECTED);
 	relay_inflight--;
 	DPRINTF("%s: inflight decremented, now %d",__func__,
 	    relay_inflight);
