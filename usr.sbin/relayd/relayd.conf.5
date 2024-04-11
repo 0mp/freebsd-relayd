@@ -1383,64 +1383,6 @@ as detailed for the
 .Ic append
 directive above.
 .El
-.Sh ROUTERS
-Routers represent routing table entries in the kernel forwarding
-database, see
-.Xr route 4 ,
-and a table of associated gateways.
-They are used to dynamically insert or remove routes with gateways
-based on their availability and health-check results.
-A router can include multiple network statements and a single forward
-statement with a table of one or more gateways.
-All entries in a single router directive must match the same address
-family, either IPv4 or IPv6.
-.Pp
-The kernel supports multipath routing when multiple gateways exist to
-the same destination address.
-The multipath routing behaviour can be changed globally using the
-.Xr sysctl 8
-variables
-.Va net.inet.ip.multipath
-and
-.Va net.inet6.ip6.multipath .
-With the default setting of 0,
-the first route selected will be used for subsequent packets to that
-destination regardless of source.
-Setting it to 1 will enable load balancing based on the packet source
-address across gateways; multiple routes with the same priority are
-used equally.
-The kernel will also check the link state of the related network
-interface and try a different route if it is not active.
-.Pp
-The configuration directives that are valid in the
-.Ic routers
-context are described below:
-.Bl -tag -width Ds
-.It Xo
-.Ic forward to
-.Pf < Ar table Ns >
-.Ic port Ar number
-.Ar options ...
-.Xc
-Specify the table of target gateways to be used; see the
-.Sx TABLES
-section above for information about table options.
-This entry is mandatory and must be specified once.
-.It Xo
-.Ic route
-.Ar address Ns Li / Ns Ar prefix
-.Xc
-Specify the network address and prefix length of a route destination
-that is reachable via the active gateways.
-This entry must be specified at least once in a router directive.
-.It Ic rtable Ar id
-Add the routes to the kernel routing table with the specified
-.Ar id .
-.It Ic rtlabel Ar label
-Add the routes with the specified
-.Ar label
-to the kernel routing table.
-.El
 .Sh FILES
 .Bl -tag -width "/usr/local/etc/ssl/private/address.keyXX" -compact
 .It Pa /usr/local/etc/relayd.conf
