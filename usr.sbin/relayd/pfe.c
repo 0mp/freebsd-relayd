@@ -164,9 +164,11 @@ pfe_dispatch_hce(int fd, struct privsep_proc *p, struct imsg *imsg)
 		log_debug("%s: state %d for host %u %s", __func__,
 		    st.up, host->conf.id, host->conf.name);
 
+#ifndef __FreeBSD__
 /* XXX Readd hosttrap code later */
 #if 0
 		snmp_hosttrap(env, table, host);
+#endif
 #endif
 
 		/*
