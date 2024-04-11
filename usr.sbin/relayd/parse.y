@@ -54,7 +54,11 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <err.h>
+#ifdef __FreeBSD__
+#include <sys/endian.h>
+#else
 #include <endian.h>
+#endif
 #include <errno.h>
 #include <limits.h>
 #include <netdb.h>
