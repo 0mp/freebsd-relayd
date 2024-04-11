@@ -61,7 +61,6 @@
 #ifndef nitems
 #define	nitems(_a)	(sizeof((_a)) / sizeof((_a)[0]))
 #endif
-#endif
 #include <limits.h>
 #include <imsg.h>
 
