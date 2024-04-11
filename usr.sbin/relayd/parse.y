@@ -487,8 +487,10 @@ main		: INTERVAL NUMBER	{
 		}
 		;
 
+#ifndef __FreeBSD__
 path		: /* nothing */		{ $$ = NULL; }
 		| PATH STRING		{ $$ = $2; }
+#endif
 
 #ifndef __FreeBSD__
 context		: /* nothing */		{ $$ = NULL; }
