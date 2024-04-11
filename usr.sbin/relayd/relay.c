@@ -1679,13 +1679,13 @@ relay_connect(struct rsession *con)
 #endif
 	int		 bnds = -1, ret;
 
+#ifndef __FreeBSD__ /* file descriptor accounting */
 	/* relay_connect should only be called once per relay */
 	if (con->se_out.state == STATE_CONNECTED) {
 		log_debug("%s: connect already called once", __func__);
 		return (0);
 	}
 
-#ifndef __FreeBSD__ /* file descriptor accounting */
 	/* Connection is already established but session not active */
 	if ((rlay->rl_conf.flags & F_TLSINSPECT) &&
 	    con->se_out.state == STATE_PRECONNECT) {
