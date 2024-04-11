@@ -580,11 +580,27 @@ purge_table(struct relayd *env, struct tablelist *head, struct table *table)
 }
 
 void
+#ifndef __FreeBSD__
 purge_key(char **key, off_t len)
+#else
+purge_key(char **ptr, off_t len)
+#endif
 {
+#ifndef __FreeBSD__
 	freezero(*key, len);
-
 	*key = NULL;
+#else
+
+	char	*key = *ptr;
+
+	if (key == NULL || len == 0)
+		return;
+
+	bzero(key, len);
+	free(key);
+
+	*ptr = NULL;
+#endif
 }
 
 void
