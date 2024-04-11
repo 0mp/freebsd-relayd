@@ -973,12 +973,10 @@ struct control_sock {
 };
 TAILQ_HEAD(control_socks, control_sock);
 
-extern struct {
+extern struct control_state {
 	struct event	 ev;
 	int		 fd;
 };
-
-EXTERN struct control_state control_state;
 
 struct imsgev {
 	struct imsgbuf		 ibuf;
